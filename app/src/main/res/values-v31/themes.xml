@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Refraction.Starting" parent="Theme.Refraction">
+        <item name="android:windowSplashScreenBackground">?attr/colorSurface</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_empty</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+    </style>
+
+</resources>

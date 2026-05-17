@@ -1,0 +1,40 @@
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Local properties (contains SDK paths that vary by machine)
+local.properties
+
+# Build outputs (these should be built inside the container)
+build/
+app/build/
+*/build/
+
+# Gradle wrapper jars can be kept, but local caches should not
+.gradle/
+captures/
+
+# macOS
+.DS_Store
+
+# Docker files themselves
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Scripts (keep them out of the build context to keep it small)
+*.sh
+
+# Documentation
+README.md
+AGENTS.md
+
+# Keystore files (security — never copy these into Docker context)
+*.jks
+*.keystore
+keystore/

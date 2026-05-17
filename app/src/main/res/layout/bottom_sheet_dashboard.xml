@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/switch_account"
+            android:textAppearance="?attr/textAppearanceTitleLarge"
+            android:textColor="?attr/colorOnSurface" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddProfile"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/add_new" />
+
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerProfiles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="400dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+</LinearLayout>

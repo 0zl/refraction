@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Refraction</string>
+    <string name="add_profile">Add Profile</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="delete_profile_title">Delete Profile</string>
+    <string name="delete_profile_message">This will remove the saved session.</string>
+    <string name="profile_name">Profile Name</string>
+    <string name="color">Color</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="refresh">Refresh</string>
+    <string name="switch_account">Switch Account</string>
+    <string name="add_new">Add New</string>
+    <string name="last_used_format">Last used: %1$s</string>
+    <string name="active_profile">Active profile</string>
+    <string name="switching_profile">Switching profile...</string>
+    <string name="extract_cookies">Extract Cookies</string>
+    <string name="clear_cookies">Clear Cookies</string>
+    <string name="cookies_label">Current Cookies</string>
+    <string name="no_cookies">No cookies found for this session.</string>
+    <string name="copy">Copy</string>
+    <string name="close">Close</string>
+    <string name="copied">Copied to clipboard</string>
+    <string name="cookies_cleared">Cookies cleared</string>
+</resources>

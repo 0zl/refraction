@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="profile_avatar_size">48dp</dimen>
+    <dimen name="color_chip_size">40dp</dimen>
+    <dimen name="color_chip_margin">8dp</dimen>
+</resources>
