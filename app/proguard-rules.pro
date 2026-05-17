@@ -15,6 +15,8 @@
 -keep class androidx.security.crypto.** { *; }
 -dontwarn androidx.security.crypto.**
 
--keepclassmembers class * extends androidx.work.Worker {
-    public <init>(android.content.Context,androidx.work.WorkerParameters);
-}
+-dontwarn javax.annotation.**
+-keep class javax.annotation.** { *; }
+
+-keep class com.google.crypto.tink.** { *; }
+-dontwarn com.google.crypto.tink.**
