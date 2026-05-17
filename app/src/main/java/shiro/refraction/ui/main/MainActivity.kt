@@ -91,9 +91,13 @@ class MainActivity : AppCompatActivity() {
         }
         webView.webChromeClient = RefractionWebChromeClient { progress ->
             viewModel.onProgressChanged(progress)
-            progressBar.setProgressCompat(progress, true)
             if (progress == 100) {
+                progressBar.progress = 0
+                progressBar.isVisible = false
                 swipeRefresh.isRefreshing = false
+            } else {
+                progressBar.isVisible = true
+                progressBar.setProgressCompat(progress, true)
             }
         }
         webView.webViewClient = RefractionWebViewClient { url ->
