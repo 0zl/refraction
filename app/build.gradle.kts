@@ -4,6 +4,11 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+val keystoreFile: String? by project
+val keystorePassword: String? by project
+val keyAliasProp: String? by project
+val keyPasswordProp: String? by project
+
 android {
     namespace = "shiro.refraction"
     compileSdk = 35
@@ -12,8 +17,17 @@ android {
         applicationId = "shiro.refraction"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.2.1"
+        versionCode = 6
+        versionName = "1.2.2"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = keystoreFile?.let { file(it) }
+            storePassword = keystorePassword
+            keyAlias = keyAliasProp
+            keyPassword = keyPasswordProp
+        }
     }
 
     buildTypes {
@@ -24,7 +38,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isMinifyEnabled = false
