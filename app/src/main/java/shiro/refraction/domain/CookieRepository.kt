@@ -17,8 +17,9 @@ class CookieRepository(context: Context) {
         val cookieString = withContext(Dispatchers.Main) {
             CookieManager.getInstance().getCookie(Constants.TARGET_DOMAIN)
         } ?: return
+        val deduplicated = deduplicateCookieString(cookieString)
         withContext(Dispatchers.IO) {
-            cookieStorage.saveCookies(profileId, mapOf(Constants.TARGET_DOMAIN to cookieString))
+            cookieStorage.saveCookies(profileId, mapOf(Constants.TARGET_DOMAIN to deduplicated))
         }
     }
 
@@ -53,6 +54,23 @@ class CookieRepository(context: Context) {
     }
 
     suspend fun getCurrentCookies(): String = withContext(Dispatchers.Main) {
-        CookieManager.getInstance().getCookie(Constants.TARGET_DOMAIN) ?: ""
+        val raw = CookieManager.getInstance().getCookie(Constants.TARGET_DOMAIN) ?: ""
+        deduplicateCookieString(raw)
+    }
+
+    private fun deduplicateCookieString(cookieString: String): String {
+        val seen = linkedMapOf<String, String>()
+        cookieString.split(";").forEach { part ->
+            val trimmed = part.trim()
+            if (trimmed.isNotEmpty()) {
+                val eqIndex = trimmed.indexOf('=')
+                if (eqIndex > 0) {
+                    val name = trimmed.substring(0, eqIndex).trim()
+                    val value = trimmed.substring(eqIndex + 1).trim()
+                    seen[name] = value
+                }
+            }
+        }
+        return seen.entries.joinToString("; ") { "${it.key}=${it.value}" }
     }
 }
