@@ -13,33 +13,38 @@ class CookieRepository(context: Context) {
 
     private val cookieStorage = CookieStorage(context)
 
-    suspend fun captureAndSave(profileId: String) = withContext(Dispatchers.IO) {
-        val cookieManager = CookieManager.getInstance()
-        val domain = Constants.TARGET_DOMAIN
-        val cookieString = cookieManager.getCookie(domain) ?: return@withContext
-        val cookies = mapOf(domain to cookieString)
-        cookieStorage.saveCookies(profileId, cookies)
+    suspend fun captureAndSave(profileId: String) {
+        val cookieString = withContext(Dispatchers.Main) {
+            CookieManager.getInstance().getCookie(Constants.TARGET_DOMAIN)
+        } ?: return
+        withContext(Dispatchers.IO) {
+            cookieStorage.saveCookies(profileId, mapOf(Constants.TARGET_DOMAIN to cookieString))
+        }
     }
 
-    suspend fun restore(profileId: String) = withContext(Dispatchers.IO) {
-        val cookies = cookieStorage.loadCookies(profileId)
-        val cookieManager = CookieManager.getInstance()
-        cookies.forEach { (domain, cookieString) ->
-            cookieString.split(";").forEach { cookie ->
-                val trimmed = cookie.trim()
-                if (trimmed.isNotEmpty()) {
-                    cookieManager.setCookie(domain, trimmed)
+    suspend fun restore(profileId: String) {
+        val cookies = withContext(Dispatchers.IO) {
+            cookieStorage.loadCookies(profileId)
+        }
+        withContext(Dispatchers.Main) {
+            val cookieManager = CookieManager.getInstance()
+            cookies.forEach { (domain, cookieString) ->
+                cookieString.split(";").forEach { cookie ->
+                    val trimmed = cookie.trim()
+                    if (trimmed.isNotEmpty()) {
+                        cookieManager.setCookie(domain, trimmed)
+                    }
                 }
             }
+            cookieManager.flush()
         }
-        cookieManager.flush()
     }
 
     suspend fun delete(profileId: String) {
         cookieStorage.deleteCookies(profileId)
     }
 
-    suspend fun clearAllCookies() = withContext(Dispatchers.IO) {
+    suspend fun clearAllCookies() = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine { continuation ->
             CookieManager.getInstance().removeAllCookies {
                 continuation.resume(Unit)
@@ -47,7 +52,7 @@ class CookieRepository(context: Context) {
         }
     }
 
-    suspend fun getCurrentCookies(): String = withContext(Dispatchers.IO) {
+    suspend fun getCurrentCookies(): String = withContext(Dispatchers.Main) {
         CookieManager.getInstance().getCookie(Constants.TARGET_DOMAIN) ?: ""
     }
 }

@@ -8,7 +8,9 @@ import android.view.MenuItem
 import android.webkit.WebSettings
 import android.webkit.WebStorage
 import android.webkit.WebView
+import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -36,24 +38,19 @@ class MainActivity : AppCompatActivity() {
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var progressBar: LinearProgressIndicator
     private lateinit var loadingOverlay: android.view.View
+    private lateinit var tvToolbarTitle: TextView
+    private lateinit var profileIndicator: android.view.View
+    private lateinit var profileSwitcher: android.view.View
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setTheme(R.style.Theme_Refraction)
         setContentView(R.layout.activity_main)
 
-        setupEdgeToEdge()
         setupViews()
         setupWebView()
         observeState()
-    }
-
-    private fun setupEdgeToEdge() {
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root)) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
     }
 
     private fun setupViews() {
@@ -61,16 +58,19 @@ class MainActivity : AppCompatActivity() {
         swipeRefresh = findViewById(R.id.swipeRefresh)
         progressBar = findViewById(R.id.progressBar)
         loadingOverlay = findViewById(R.id.loadingOverlay)
+        tvToolbarTitle = findViewById(R.id.tvToolbarTitle)
+        profileIndicator = findViewById(R.id.profileIndicator)
+        profileSwitcher = findViewById(R.id.profileSwitcher)
 
         swipeRefresh.setOnRefreshListener {
             webView.reload()
         }
 
-        findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar).setOnClickListener {
-            openDashboard()
-        }
+        profileSwitcher.setOnClickListener { openDashboard() }
 
-        setSupportActionBar(findViewById(R.id.toolbar))
+        val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -125,16 +125,21 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
+                launch {
+                    viewModel.switchEvent.collect {
+                        clearWebViewState()
+                        webView.loadUrl(Constants.TARGET_URL)
+                    }
+                }
             }
         }
     }
 
     private fun updateToolbar(profile: Profile?) {
-        supportActionBar?.title = profile?.name ?: getString(R.string.app_name)
-        val indicator = findViewById<android.view.View>(R.id.profileIndicator)
-        indicator?.isVisible = profile != null
+        tvToolbarTitle.text = profile?.name ?: getString(R.string.app_name)
+        profileIndicator.isVisible = profile != null
         profile?.let {
-            indicator?.background?.setTint(Color.parseColor(it.colorHex))
+            profileIndicator.background?.setTint(Color.parseColor(it.colorHex))
         }
     }
 
@@ -145,9 +150,7 @@ class MainActivity : AppCompatActivity() {
         sheet.onProfileSelected = { profile ->
             val current = viewModel.activeProfile.value
             if (current?.id != profile.id) {
-                clearWebViewState()
                 viewModel.switchToProfile(current?.id, profile)
-                webView.loadUrl(Constants.TARGET_URL)
             }
         }
         sheet.onAddProfile = {
@@ -228,10 +231,7 @@ class MainActivity : AppCompatActivity() {
     private fun clearCookies() {
         lifecycleScope.launch {
             viewModel.clearCurrentProfileCookies()
-            webView.clearCache(true)
-            WebStorage.getInstance().deleteAllData()
-            webView.clearHistory()
-            webView.clearFormData()
+            clearWebViewState()
             webView.loadUrl(Constants.TARGET_URL)
             Toast.makeText(this@MainActivity, R.string.cookies_cleared, Toast.LENGTH_SHORT).show()
         }
@@ -253,10 +253,12 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
+    @Deprecated("Use OnBackPressedDispatcher")
     override fun onBackPressed() {
         if (webView.canGoBack()) {
             webView.goBack()
         } else {
+            @Suppress("DEPRECATION")
             super.onBackPressed()
         }
     }

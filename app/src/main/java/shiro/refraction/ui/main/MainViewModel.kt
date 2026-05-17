@@ -1,11 +1,13 @@
 package shiro.refraction.ui.main
 
 import android.app.Application
-import android.webkit.WebStorage
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import shiro.refraction.data.local.ProfileEntity
@@ -32,6 +34,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _showEmptyState = MutableStateFlow(false)
     val showEmptyState: StateFlow<Boolean> = _showEmptyState.asStateFlow()
+
+    private val _switchEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val switchEvent: SharedFlow<Unit> = _switchEvent.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -69,6 +74,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             profileManager.switchToProfile(fromProfileId, toProfile)
             _activeProfile.value = toProfile
             _isLoading.value = false
+            _switchEvent.tryEmit(Unit)
         }
     }
 

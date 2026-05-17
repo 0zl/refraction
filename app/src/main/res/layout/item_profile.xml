@@ -7,19 +7,22 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:padding="12dp"
+    android:paddingStart="20dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp"
     android:background="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true">
 
     <TextView
         android:id="@+id/tvAvatar"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:background="@drawable/circle_color"
         android:gravity="center"
         android:textColor="@android:color/white"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
+        android:textSize="14sp"
         android:textStyle="bold"
         tools:text="AB" />
 
@@ -28,7 +31,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:layout_marginStart="16dp">
+        android:layout_marginStart="14dp">
 
         <TextView
             android:id="@+id/tvName"
@@ -50,8 +53,8 @@
 
     <ImageView
         android:id="@+id/ivCheckmark"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
         android:src="@drawable/ic_check"
         android:visibility="gone"
         android:contentDescription="@string/active_profile"
