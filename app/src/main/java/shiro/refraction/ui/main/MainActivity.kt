@@ -1,5 +1,8 @@
 package shiro.refraction.ui.main
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
@@ -103,6 +106,12 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = RefractionWebViewClient { url ->
             viewModel.onPageFinished(url)
             swipeRefresh.isRefreshing = false
+            if (webView.alpha < 1f) {
+                ObjectAnimator.ofFloat(webView, "alpha", 0f, 1f).apply {
+                    duration = 200
+                    start()
+                }
+            }
         }
     }
 
@@ -119,7 +128,24 @@ class MainActivity : AppCompatActivity() {
                 }
                 launch {
                     viewModel.isLoading.collect { loading ->
-                        loadingOverlay.isVisible = loading
+                        if (loading) {
+                            loadingOverlay.isVisible = true
+                            loadingOverlay.alpha = 0f
+                            ObjectAnimator.ofFloat(loadingOverlay, "alpha", 0f, 1f).apply {
+                                duration = 150
+                                start()
+                            }
+                        } else {
+                            ObjectAnimator.ofFloat(loadingOverlay, "alpha", 1f, 0f).apply {
+                                duration = 150
+                                addListener(object : AnimatorListenerAdapter() {
+                                    override fun onAnimationEnd(animation: Animator) {
+                                        loadingOverlay.isVisible = false
+                                    }
+                                })
+                                start()
+                            }
+                        }
                     }
                 }
                 launch {
@@ -132,6 +158,7 @@ class MainActivity : AppCompatActivity() {
                 launch {
                     viewModel.switchEvent.collect {
                         clearWebViewState()
+                        webView.alpha = 0f
                         webView.loadUrl(Constants.TARGET_URL)
                     }
                 }
