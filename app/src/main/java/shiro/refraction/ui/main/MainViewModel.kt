@@ -141,6 +141,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         requestRecorder.stopRecording()
     }
 
+    fun clearRecordedRequests() {
+        requestRecorder.clear()
+    }
+
     fun recordRequest(request: NetworkRequest) {
         requestRecorder.record(request)
     }

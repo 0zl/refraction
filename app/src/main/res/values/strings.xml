@@ -35,6 +35,7 @@
     <string name="export_requests">Export requests</string>
     <string name="copy_curl">Copy cURL</string>
     <string name="back">Back</string>
+    <string name="clear">Clear</string>
     <string name="request_headers">Request Headers</string>
     <string name="request_body">Request Body</string>
     <string name="response_headers">Response Headers</string>

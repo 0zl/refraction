@@ -57,6 +57,7 @@ class RequestLogBottomSheet : BottomSheetDialogFragment() {
         val tvEmpty = view.findViewById<TextView>(R.id.tvEmpty)
         val btnClose = view.findViewById<MaterialButton>(R.id.btnClose)
         val btnExport = view.findViewById<MaterialButton>(R.id.btnExport)
+        val btnClear = view.findViewById<MaterialButton>(R.id.btnClear)
         val chipGroup = view.findViewById<ChipGroup>(R.id.chipGroup)
         val switchApiOnly = view.findViewById<MaterialSwitch>(R.id.switchApiOnly)
         val btnBack = view.findViewById<MaterialButton>(R.id.btnBack)
@@ -65,6 +66,13 @@ class RequestLogBottomSheet : BottomSheetDialogFragment() {
         btnClose.setOnClickListener { dismiss() }
 
         btnExport.setOnClickListener { exportJson() }
+
+        btnClear.setOnClickListener {
+            viewModel.clearRecordedRequests()
+            selectedRequest = null
+            view.findViewById<View>(R.id.detailContainer).visibility = View.GONE
+            view.findViewById<View>(R.id.recyclerRequests).visibility = View.VISIBLE
+        }
 
         chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
             currentSourceFilter = null
