@@ -285,7 +285,7 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu?) {
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         super.onPrepareOptionsMenu(menu)
         val recording = viewModel.isRecording.value
         menu?.findItem(R.id.action_toggle_recording)?.title = if (recording) {
@@ -295,6 +295,7 @@ class MainActivity : AppCompatActivity() {
         }
         menu?.findItem(R.id.action_view_log)?.isVisible =
             viewModel.recordedRequests.value.isNotEmpty()
+        return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
