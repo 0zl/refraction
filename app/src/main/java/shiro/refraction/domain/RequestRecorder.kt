@@ -1,0 +1,99 @@
+package shiro.refraction.domain
+
+import android.webkit.JavascriptInterface
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONObject
+import shiro.refraction.data.model.NetworkRequest
+import shiro.refraction.data.model.RequestSource
+
+class RequestRecorder {
+
+    private val _isRecording = MutableStateFlow(false)
+    val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
+
+    private val _requests = MutableStateFlow<List<NetworkRequest>>(emptyList())
+    val requests: StateFlow<List<NetworkRequest>> = _requests.asStateFlow()
+
+    private val requestsList = mutableListOf<NetworkRequest>()
+
+    fun startRecording() {
+        synchronized(this) {
+            requestsList.clear()
+            _requests.value = emptyList()
+        }
+        _isRecording.value = true
+    }
+
+    fun stopRecording() {
+        _isRecording.value = false
+    }
+
+    fun record(request: NetworkRequest) {
+        if (!_isRecording.value) return
+        synchronized(this) {
+            if (requestsList.size >= MAX_REQUESTS) requestsList.removeAt(0)
+            requestsList.add(request)
+            _requests.value = requestsList.toList()
+        }
+    }
+
+    fun clear() {
+        synchronized(this) {
+            requestsList.clear()
+            _requests.value = emptyList()
+        }
+    }
+
+    class JsBridge(private val recorder: RequestRecorder) {
+        @JavascriptInterface
+        fun capture(json: String) {
+            val obj = JSONObject(json)
+            recorder.record(
+                NetworkRequest(
+                    method = obj.optString("m", "GET"),
+                    url = obj.optString("u", ""),
+                    headers = obj.optJSONObject("h")?.toStringMap() ?: emptyMap(),
+                    requestBody = obj.optString("b", null).takeIf { it != "" && it != "null" },
+                    responseCode = obj.optInt("rc", 0),
+                    responseHeaders = obj.optJSONObject("rh")?.toStringMap() ?: emptyMap(),
+                    responseBody = obj.optString("rb", null).takeIf { it != "" && it != "null" },
+                    source = RequestSource.API,
+                    timestamp = obj.optLong("t", System.currentTimeMillis())
+                )
+            )
+        }
+
+        private fun JSONObject.toStringMap(): Map<String, String> {
+            val map = mutableMapOf<String, String>()
+            val keys = this.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                map[key] = this.getString(key)
+            }
+            return map
+        }
+    }
+
+    companion object {
+        private const val MAX_REQUESTS = 500
+
+        @Suppress("StringLiteralDuplication")
+        const val INJECTION_SCRIPT = """(function(){
+if(window.__rfRec)return;
+window.__rfRec=true;
+function send(d){try{window.__rfBridge.capture(JSON.stringify(d));}catch(e){}}
+function trunc(s,n){if(s===null||s===undefined)return null;try{var t=typeof s==='string'?s:String(s);return t.length>n?t.substring(0,n):t;}catch(e){return null;}}
+function parseHdr(raw){var h={};if(!raw)return h;try{var lines=raw.trim().split(/\r?\n/);for(var i=0;i<lines.length;i++){var idx=lines[i].indexOf(':');if(idx>0)h[lines[i].substring(0,idx).trim()]=lines[i].substring(idx+1).trim();}}catch(e){}return h;}
+var oOpen=XMLHttpRequest.prototype.open;
+var oSend=XMLHttpRequest.prototype.send;
+var oHdr=XMLHttpRequest.prototype.setRequestHeader;
+XMLHttpRequest.prototype.open=function(m,u){this.__rf={m:m,u:u,h:{}};return oOpen.apply(this,arguments);};
+XMLHttpRequest.prototype.setRequestHeader=function(k,v){if(this.__rf)this.__rf.h[k]=v;return oHdr.apply(this,arguments);};
+XMLHttpRequest.prototype.send=function(b){var s=this;if(s.__rf){s.__rf.b=trunc(b,10240);var t=Date.now();var done=function(){if(s.readyState!==4)return;send({m:s.__rf.m,u:s.__rf.u,h:s.__rf.h,b:s.__rf.b,rc:s.status,rh:parseHdr(s.getAllResponseHeaders()),rb:trunc(s.responseText,10240),t:t});};s.addEventListener('readystatechange',done);}return oSend.apply(this,arguments);};
+var oFetch=window.fetch;
+window.fetch=function(inp,init){var u=typeof inp==='string'?inp:(inp&&inp.url?inp.url:String(inp));var m=(init&&init.method)||(inp&&inp.method?inp.method:'GET');var hd={};if(init&&init.headers){if(typeof init.headers.forEach==='function'){init.headers.forEach(function(v,k){hd[k]=v;});}else{for(var k in init.headers){if(init.headers.hasOwnProperty(k))hd[k]=init.headers[k];}}}var b=trunc(init&&init.body?init.body:null,10240);var t=Date.now();return oFetch.apply(this,arguments).then(function(r){var cl=r.clone();var rh={};if(r.headers&&typeof r.headers.forEach==='function'){r.headers.forEach(function(v,k){rh[k]=v;});}cl.text().then(function(txt){send({m:m,u:u,h:hd,b:b,rc:r.status,rh:rh,rb:trunc(txt,10240),t:t});}).catch(function(){send({m:m,u:u,h:hd,b:b,rc:r.status,rh:rh,rb:null,t:t});});return r;}).catch(function(e){send({m:m,u:u,h:hd,b:b,rc:0,rh:{},rb:null,t:t});throw e;});};
+})();"""
+    }
+}

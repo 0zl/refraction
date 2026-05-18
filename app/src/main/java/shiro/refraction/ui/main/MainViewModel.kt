@@ -11,14 +11,17 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import shiro.refraction.data.local.ProfileEntity
+import shiro.refraction.data.model.NetworkRequest
 import shiro.refraction.data.model.Profile
 import shiro.refraction.domain.CookieRepository
 import shiro.refraction.domain.ProfileManager
+import shiro.refraction.domain.RequestRecorder
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val profileManager = ProfileManager(application)
     private val cookieRepository = CookieRepository(application)
+    val requestRecorder = RequestRecorder()
 
     private val _profiles = MutableStateFlow<List<Profile>>(emptyList())
     val profiles: StateFlow<List<Profile>> = _profiles.asStateFlow()
@@ -37,6 +40,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _switchEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val switchEvent: SharedFlow<Unit> = _switchEvent.asSharedFlow()
+
+    val isRecording: StateFlow<Boolean> = requestRecorder.isRecording
+    val recordedRequests: StateFlow<List<NetworkRequest>> = requestRecorder.requests
 
     init {
         viewModelScope.launch {
@@ -125,6 +131,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun getCurrentCookieString(): String {
         return cookieRepository.getCurrentCookies()
+    }
+
+    fun startRecording() {
+        requestRecorder.startRecording()
+    }
+
+    fun stopRecording() {
+        requestRecorder.stopRecording()
+    }
+
+    fun recordRequest(request: NetworkRequest) {
+        requestRecorder.record(request)
     }
 
     private fun ProfileEntity.toModel() = Profile(

@@ -25,4 +25,20 @@
     <string name="close">Close</string>
     <string name="copied">Copied to clipboard</string>
     <string name="cookies_cleared">Cookies cleared</string>
+    <string name="start_recording">Start Recording</string>
+    <string name="stop_recording">Stop Recording</string>
+    <string name="request_log">Request Log</string>
+    <string name="request_log_count">Request Log (%1$d)</string>
+    <string name="no_requests">No requests recorded</string>
+    <string name="api_only">API only</string>
+    <string name="export_json">Export</string>
+    <string name="export_requests">Export requests</string>
+    <string name="copy_curl">Copy cURL</string>
+    <string name="back">Back</string>
+    <string name="request_headers">Request Headers</string>
+    <string name="request_body">Request Body</string>
+    <string name="response_headers">Response Headers</string>
+    <string name="response_body">Response Body</string>
+    <string name="rec">REC</string>
+    <string name="view_request_log">View Request Log</string>
 </resources>

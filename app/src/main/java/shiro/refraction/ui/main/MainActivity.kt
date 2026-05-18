@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.webkit.WebSettings
 import android.webkit.WebStorage
 import android.webkit.WebView
@@ -28,10 +29,13 @@ import androidx.webkit.WebViewFeature
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.launch
 import shiro.refraction.R
+import shiro.refraction.data.model.NetworkRequest
 import shiro.refraction.data.model.Profile
+import shiro.refraction.domain.RequestRecorder
 import shiro.refraction.ui.dashboard.DashboardBottomSheet
 import shiro.refraction.ui.dialog.AddProfileDialog
 import shiro.refraction.ui.dialog.CookieBottomSheet
+import shiro.refraction.ui.dialog.RequestLogBottomSheet
 import shiro.refraction.util.Constants
 
 class MainActivity : AppCompatActivity() {
@@ -40,10 +44,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var progressBar: LinearProgressIndicator
-    private lateinit var loadingOverlay: android.view.View
+    private lateinit var loadingOverlay: View
     private lateinit var tvToolbarTitle: TextView
-    private lateinit var profileIndicator: android.view.View
-    private lateinit var profileSwitcher: android.view.View
+    private lateinit var profileIndicator: View
+    private lateinit var profileSwitcher: View
+    private lateinit var recordingIndicator: View
+    private lateinit var recordingDot: View
+    private var pulseAnimator: ObjectAnimator? = null
+    private var isFirstLoad = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -64,6 +72,8 @@ class MainActivity : AppCompatActivity() {
         tvToolbarTitle = findViewById(R.id.tvToolbarTitle)
         profileIndicator = findViewById(R.id.profileIndicator)
         profileSwitcher = findViewById(R.id.profileSwitcher)
+        recordingIndicator = findViewById(R.id.recordingIndicator)
+        recordingDot = findViewById(R.id.recordingDot)
 
         swipeRefresh.setOnRefreshListener {
             webView.reload()
@@ -74,6 +84,8 @@ class MainActivity : AppCompatActivity() {
         val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
+
+        recordingDot.background?.setTint(Color.parseColor("#F44336"))
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -92,6 +104,12 @@ class MainActivity : AppCompatActivity() {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
             WebSettingsCompat.setAlgorithmicDarkeningAllowed(webView.settings, true)
         }
+
+        webView.addJavascriptInterface(
+            RequestRecorder.JsBridge(viewModel.requestRecorder),
+            "__rfBridge"
+        )
+
         webView.webChromeClient = RefractionWebChromeClient { progress ->
             viewModel.onProgressChanged(progress)
             if (progress == 100) {
@@ -103,16 +121,30 @@ class MainActivity : AppCompatActivity() {
                 progressBar.setProgressCompat(progress, true)
             }
         }
-        webView.webViewClient = RefractionWebViewClient { url ->
-            viewModel.onPageFinished(url)
-            swipeRefresh.isRefreshing = false
-            if (webView.alpha < 1f) {
-                ObjectAnimator.ofFloat(webView, "alpha", 0f, 1f).apply {
-                    duration = 200
-                    start()
+        webView.webViewClient = RefractionWebViewClient(
+            onPageFinished = { url ->
+                viewModel.onPageFinished(url)
+                swipeRefresh.isRefreshing = false
+                if (webView.alpha < 1f) {
+                    ObjectAnimator.ofFloat(webView, "alpha", 0f, 1f).apply {
+                        duration = 200
+                        start()
+                    }
                 }
+            },
+            onPageStarted = { _ ->
+                if (viewModel.isRecording.value) {
+                    injectRecordingScript()
+                }
+            },
+            onRequestIntercepted = { request ->
+                viewModel.recordRequest(request)
             }
-        }
+        )
+    }
+
+    private fun injectRecordingScript() {
+        webView.evaluateJavascript(RequestRecorder.INJECTION_SCRIPT, null)
     }
 
     private fun observeState() {
@@ -162,7 +194,30 @@ class MainActivity : AppCompatActivity() {
                         webView.loadUrl(Constants.TARGET_URL)
                     }
                 }
+                launch {
+                    viewModel.isRecording.collect { recording ->
+                        updateRecordingIndicator(recording)
+                        invalidateOptionsMenu()
+                    }
+                }
             }
+        }
+    }
+
+    private fun updateRecordingIndicator(recording: Boolean) {
+        if (recording) {
+            recordingIndicator.isVisible = true
+            pulseAnimator?.cancel()
+            pulseAnimator = ObjectAnimator.ofFloat(recordingDot, "alpha", 1f, 0.2f, 1f).apply {
+                duration = 1000
+                repeatCount = ObjectAnimator.INFINITE
+                start()
+            }
+            injectRecordingScript()
+        } else {
+            pulseAnimator?.cancel()
+            pulseAnimator = null
+            recordingIndicator.isVisible = false
         }
     }
 
@@ -230,8 +285,28 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    override fun onPrepareOptionsMenu(menu: Menu?) {
+        super.onPrepareOptionsMenu(menu)
+        val recording = viewModel.isRecording.value
+        menu?.findItem(R.id.action_toggle_recording)?.title = if (recording) {
+            getString(R.string.stop_recording)
+        } else {
+            getString(R.string.start_recording)
+        }
+        menu?.findItem(R.id.action_view_log)?.isVisible =
+            viewModel.recordedRequests.value.isNotEmpty()
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_toggle_recording -> {
+                toggleRecording()
+                true
+            }
+            R.id.action_view_log -> {
+                showRequestLog()
+                true
+            }
             R.id.action_add_profile -> {
                 showAddProfileDialog()
                 true
@@ -250,6 +325,20 @@ class MainActivity : AppCompatActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun toggleRecording() {
+        if (viewModel.isRecording.value) {
+            viewModel.stopRecording()
+            showRequestLog()
+        } else {
+            viewModel.startRecording()
+            Toast.makeText(this, R.string.start_recording, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showRequestLog() {
+        RequestLogBottomSheet().show(supportFragmentManager, "request_log")
     }
 
     private fun extractCookies() {
@@ -280,6 +369,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        pulseAnimator?.cancel()
         webView.destroy()
         super.onDestroy()
     }
