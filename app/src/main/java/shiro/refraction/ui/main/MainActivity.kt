@@ -137,6 +137,7 @@ class MainActivity : AppCompatActivity() {
                     injectRecordingScript()
                 }
             },
+            isRecording = { viewModel.isRecording.value },
             onRequestIntercepted = { request ->
                 viewModel.recordRequest(request)
             }

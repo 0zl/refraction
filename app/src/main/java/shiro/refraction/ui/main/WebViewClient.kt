@@ -20,6 +20,7 @@ class RefractionWebChromeClient(
 class RefractionWebViewClient(
     private val onPageFinished: (String) -> Unit,
     private val onPageStarted: (String) -> Unit = {},
+    private val isRecording: () -> Boolean = { false },
     private val onRequestIntercepted: ((NetworkRequest) -> Unit)? = null
 ) : WebViewClient() {
 
@@ -35,7 +36,7 @@ class RefractionWebViewClient(
         view: WebView?,
         request: WebResourceRequest?
     ): WebResourceResponse? {
-        if (onRequestIntercepted != null && request != null) {
+        if (isRecording() && onRequestIntercepted != null && request != null) {
             onRequestIntercepted(
                 NetworkRequest(
                     method = request.method,
