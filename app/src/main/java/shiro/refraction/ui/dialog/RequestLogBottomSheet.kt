@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -18,7 +19,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.materialswitch.MaterialSwitch
 import kotlinx.coroutines.launch
@@ -27,6 +27,7 @@ import shiro.refraction.R
 import shiro.refraction.data.model.NetworkRequest
 import shiro.refraction.data.model.RequestSource
 import shiro.refraction.ui.main.MainViewModel
+import java.io.File
 
 class RequestLogBottomSheet : BottomSheetDialogFragment() {
 
@@ -112,13 +113,16 @@ class RequestLogBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun updateList() {
-        val requests = viewModel.recordedRequests.value
-        val filtered = requests.filter { req ->
+    private fun getFilteredRequests(): List<NetworkRequest> {
+        return viewModel.recordedRequests.value.filter { req ->
             (currentFilter == null || req.method.equals(currentFilter, ignoreCase = true)) &&
             (currentSourceFilter == null || req.source == currentSourceFilter) &&
             (!apiOnly || req.source == RequestSource.API || req.source == RequestSource.WEBSOCKET)
         }
+    }
+
+    private fun updateList() {
+        val filtered = getFilteredRequests()
         adapter.submitList(filtered)
         val recycler = view?.findViewById<View>(R.id.recyclerRequests) ?: return
         val tvEmpty = view?.findViewById<View>(R.id.tvEmpty) ?: return
@@ -176,18 +180,31 @@ class RequestLogBottomSheet : BottomSheetDialogFragment() {
         headers.entries.joinToString("\n") { (k, v) -> "$k: $v" }
 
     private fun exportJson() {
-        val requests = viewModel.recordedRequests.value
-        if (requests.isEmpty()) {
+        val filtered = getFilteredRequests()
+        if (filtered.isEmpty()) {
             Toast.makeText(requireContext(), R.string.no_requests, Toast.LENGTH_SHORT).show()
             return
         }
+
         val jsonArray = JSONArray()
-        requests.forEach { jsonArray.put(it.toJson()) }
+        filtered.forEach { jsonArray.put(it.toJson()) }
         val json = jsonArray.toString(2)
+
+        val exportsDir = File(requireContext().cacheDir, "exports")
+        exportsDir.mkdirs()
+        val file = File(exportsDir, "refraction_requests_${System.currentTimeMillis()}.json")
+        file.writeText(json)
+
+        val uri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.fileprovider",
+            file
+        )
 
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "application/json"
-            putExtra(Intent.EXTRA_TEXT, json)
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         startActivity(Intent.createChooser(shareIntent, getString(R.string.export_requests)))
     }

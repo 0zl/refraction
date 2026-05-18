@@ -33,7 +33,6 @@ class RequestRecorder {
     fun record(request: NetworkRequest) {
         if (!_isRecording.value) return
         synchronized(this) {
-            if (requestsList.size >= MAX_REQUESTS) requestsList.removeAt(0)
             requestsList.add(request)
             _requests.value = requestsList.toList()
         }
@@ -82,7 +81,6 @@ class RequestRecorder {
     }
 
     companion object {
-        private const val MAX_REQUESTS = 500
 
         @Suppress("StringLiteralDuplication")
         const val INJECTION_SCRIPT = """(function(){
