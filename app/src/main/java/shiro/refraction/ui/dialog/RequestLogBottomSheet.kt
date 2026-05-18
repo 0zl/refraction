@@ -34,6 +34,7 @@ class RequestLogBottomSheet : BottomSheetDialogFragment() {
     private lateinit var adapter: RequestAdapter
     private var selectedRequest: NetworkRequest? = null
     private var currentFilter: String? = null
+    private var currentSourceFilter: RequestSource? = null
     private var apiOnly = false
 
     override fun onCreateView(
@@ -65,11 +66,16 @@ class RequestLogBottomSheet : BottomSheetDialogFragment() {
         btnExport.setOnClickListener { exportJson() }
 
         chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
+            currentSourceFilter = null
             currentFilter = when {
                 checkedIds.contains(R.id.chipGet) -> "GET"
                 checkedIds.contains(R.id.chipPost) -> "POST"
                 checkedIds.contains(R.id.chipPut) -> "PUT"
                 checkedIds.contains(R.id.chipDelete) -> "DELETE"
+                checkedIds.contains(R.id.chipWs) -> {
+                    currentSourceFilter = RequestSource.WEBSOCKET
+                    null
+                }
                 else -> null
             }
             updateList()
@@ -110,7 +116,8 @@ class RequestLogBottomSheet : BottomSheetDialogFragment() {
         val requests = viewModel.recordedRequests.value
         val filtered = requests.filter { req ->
             (currentFilter == null || req.method.equals(currentFilter, ignoreCase = true)) &&
-            (!apiOnly || req.source == RequestSource.API)
+            (currentSourceFilter == null || req.source == currentSourceFilter) &&
+            (!apiOnly || req.source == RequestSource.API || req.source == RequestSource.WEBSOCKET)
         }
         adapter.submitList(filtered)
         val recycler = view?.findViewById<View>(R.id.recyclerRequests) ?: return

@@ -69,6 +69,10 @@ class RequestAdapter(
         "PATCH" -> Color.parseColor("#9C27B0")
         "HEAD" -> Color.parseColor("#9E9E9E")
         "OPTIONS" -> Color.parseColor("#009688")
+        "WS_UP" -> Color.parseColor("#00897B")
+        "WS_IN" -> Color.parseColor("#26A69A")
+        "WS_OUT" -> Color.parseColor("#00796B")
+        "WS_CLOSE" -> Color.parseColor("#4DB6AC")
         else -> Color.parseColor("#607D8B")
     }
 

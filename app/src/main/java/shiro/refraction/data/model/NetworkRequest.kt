@@ -33,4 +33,4 @@ data class NetworkRequest(
     }
 }
 
-enum class RequestSource { API, RESOURCE }
+enum class RequestSource { API, RESOURCE, WEBSOCKET }
