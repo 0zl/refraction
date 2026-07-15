@@ -19,3 +19,16 @@ object Constants {
         "#FF5722"
     )
 }
+
+object UserAgent {
+    private const val MOBILE_CHROME =
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/126.0.6478.71 Mobile Safari/537.36"
+
+    private const val DESKTOP_CHROME =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/126.0.6478.71 Safari/537.36"
+
+    fun forDesktop(desktop: Boolean): String =
+        if (desktop) DESKTOP_CHROME else MOBILE_CHROME
+}

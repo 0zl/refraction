@@ -1,6 +1,7 @@
 package shiro.refraction.ui.main
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,6 +23,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val profileManager = ProfileManager(application)
     private val cookieRepository = CookieRepository(application)
     val requestRecorder = RequestRecorder()
+
+    private val prefs = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    private val _desktopMode = MutableStateFlow(prefs.getBoolean(KEY_DESKTOP_MODE, false))
+    val desktopMode: StateFlow<Boolean> = _desktopMode.asStateFlow()
+
+    private val _uaChangedEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val uaChangedEvent: SharedFlow<Unit> = _uaChangedEvent.asSharedFlow()
 
     private val _profiles = MutableStateFlow<List<Profile>>(emptyList())
     val profiles: StateFlow<List<Profile>> = _profiles.asStateFlow()
@@ -133,6 +142,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return cookieRepository.getCurrentCookies()
     }
 
+    fun toggleDesktopMode() {
+        val newValue = !_desktopMode.value
+        prefs.edit().putBoolean(KEY_DESKTOP_MODE, newValue).apply()
+        _desktopMode.value = newValue
+        _uaChangedEvent.tryEmit(Unit)
+    }
+
     fun startRecording() {
         requestRecorder.startRecording()
     }
@@ -147,6 +163,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun recordRequest(request: NetworkRequest) {
         requestRecorder.record(request)
+    }
+
+    private companion object {
+        private const val PREFS_NAME = "refraction_prefs"
+        private const val KEY_DESKTOP_MODE = "desktop_mode"
     }
 
     private fun ProfileEntity.toModel() = Profile(

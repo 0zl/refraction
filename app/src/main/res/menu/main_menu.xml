@@ -3,6 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_desktop_mode"
+        android:title="@string/desktop_mode"
+        android:orderInCategory="3"
+        android:checkable="true"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_toggle_recording"
         android:title="@string/start_recording"
         android:orderInCategory="10"

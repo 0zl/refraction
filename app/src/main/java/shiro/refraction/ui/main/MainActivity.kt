@@ -37,6 +37,7 @@ import shiro.refraction.ui.dialog.AddProfileDialog
 import shiro.refraction.ui.dialog.CookieBottomSheet
 import shiro.refraction.ui.dialog.RequestLogBottomSheet
 import shiro.refraction.util.Constants
+import shiro.refraction.util.UserAgent
 
 class MainActivity : AppCompatActivity() {
 
@@ -96,6 +97,8 @@ class MainActivity : AppCompatActivity() {
             databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            userAgentString = UserAgent.forDesktop(viewModel.desktopMode.value)
+            setSupportMultipleWindows(true)
         }
 
         webView.setBackgroundColor(Color.TRANSPARENT)
@@ -110,17 +113,21 @@ class MainActivity : AppCompatActivity() {
             "__rfBridge"
         )
 
-        webView.webChromeClient = RefractionWebChromeClient { progress ->
-            viewModel.onProgressChanged(progress)
-            if (progress == 100) {
-                progressBar.progress = 0
-                progressBar.isVisible = false
-                swipeRefresh.isRefreshing = false
-            } else {
-                progressBar.isVisible = true
-                progressBar.setProgressCompat(progress, true)
-            }
-        }
+        webView.webChromeClient = RefractionWebChromeClient(
+            onProgressChanged = { progress ->
+                viewModel.onProgressChanged(progress)
+                if (progress == 100) {
+                    progressBar.progress = 0
+                    progressBar.isVisible = false
+                    swipeRefresh.isRefreshing = false
+                } else {
+                    progressBar.isVisible = true
+                    progressBar.setProgressCompat(progress, true)
+                }
+            },
+            userAgentProvider = { UserAgent.forDesktop(viewModel.desktopMode.value) }
+        )
+
         webView.webViewClient = RefractionWebViewClient(
             onPageFinished = { url ->
                 viewModel.onPageFinished(url)
@@ -193,6 +200,13 @@ class MainActivity : AppCompatActivity() {
                         clearWebViewState()
                         webView.alpha = 0f
                         webView.loadUrl(Constants.TARGET_URL)
+                    }
+                }
+                launch {
+                    viewModel.uaChangedEvent.collect {
+                        webView.settings.userAgentString =
+                            UserAgent.forDesktop(viewModel.desktopMode.value)
+                        webView.reload()
                     }
                 }
                 launch {
@@ -289,6 +303,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         super.onPrepareOptionsMenu(menu)
         val recording = viewModel.isRecording.value
+        menu?.findItem(R.id.action_desktop_mode)?.isChecked = viewModel.desktopMode.value
         menu?.findItem(R.id.action_toggle_recording)?.title = if (recording) {
             getString(R.string.stop_recording)
         } else {
@@ -307,6 +322,11 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.action_view_log -> {
                 showRequestLog()
+                true
+            }
+            R.id.action_desktop_mode -> {
+                viewModel.toggleDesktopMode()
+                invalidateOptionsMenu()
                 true
             }
             R.id.action_add_profile -> {

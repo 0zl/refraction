@@ -25,6 +25,7 @@
     <string name="close">Close</string>
     <string name="copied">Copied to clipboard</string>
     <string name="cookies_cleared">Cookies cleared</string>
+    <string name="desktop_mode">Desktop Site</string>
     <string name="start_recording">Start Recording</string>
     <string name="stop_recording">Stop Recording</string>
     <string name="request_log">Request Log</string>
