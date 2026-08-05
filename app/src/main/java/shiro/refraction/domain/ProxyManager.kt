@@ -18,6 +18,7 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.SocketTimeoutException
 import java.util.concurrent.Executor
+import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 
@@ -26,7 +27,13 @@ class ProxyManager(context: Context) {
     private val prefs = context.applicationContext
         .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    private val mainExecutor: Executor = Handler(Looper.getMainLooper())::post
+    private val mainExecutor: Executor = Executor { command ->
+        Handler(Looper.getMainLooper()).post(command)
+    }
+
+    private val sslSocketFactory: SSLSocketFactory by lazy {
+        SSLContext.getInstance("TLS").apply { init(null, null, null) }.socketFactory
+    }
 
     fun load(): ProxySettings {
         if (!prefs.getBoolean(KEY_ENABLED, false)) return ProxySettings()
@@ -110,7 +117,7 @@ class ProxyManager(context: Context) {
                 return@withContext TestResult(false, "Proxy refused the connection to $TEST_HOST")
             }
 
-            val ssl = SSLSocketFactory.getDefault()
+            val ssl = sslSocketFactory
                 .createSocket(socket, TEST_HOST, TEST_PORT, true) as SSLSocket
             ssl.soTimeout = READ_TIMEOUT_MS
             ssl.startHandshake()
