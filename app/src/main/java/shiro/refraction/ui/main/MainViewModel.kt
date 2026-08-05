@@ -14,14 +14,17 @@ import kotlinx.coroutines.launch
 import shiro.refraction.data.local.ProfileEntity
 import shiro.refraction.data.model.NetworkRequest
 import shiro.refraction.data.model.Profile
+import shiro.refraction.data.model.ProxySettings
 import shiro.refraction.domain.CookieRepository
 import shiro.refraction.domain.ProfileManager
+import shiro.refraction.domain.ProxyManager
 import shiro.refraction.domain.RequestRecorder
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val profileManager = ProfileManager(application)
     private val cookieRepository = CookieRepository(application)
+    private val proxyManager = ProxyManager(application)
     val requestRecorder = RequestRecorder()
 
     private val prefs = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -49,6 +52,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _switchEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val switchEvent: SharedFlow<Unit> = _switchEvent.asSharedFlow()
+
+    private val _proxySettings = MutableStateFlow(proxyManager.load())
+    val proxySettings: StateFlow<ProxySettings> = _proxySettings.asStateFlow()
 
     val isRecording: StateFlow<Boolean> = requestRecorder.isRecording
     val recordedRequests: StateFlow<List<NetworkRequest>> = requestRecorder.requests
@@ -147,6 +153,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putBoolean(KEY_DESKTOP_MODE, newValue).apply()
         _desktopMode.value = newValue
         _uaChangedEvent.tryEmit(Unit)
+    }
+
+    fun saveProxySettings(settings: ProxySettings) {
+        proxyManager.save(settings)
+        _proxySettings.value = settings
     }
 
     fun startRecording() {

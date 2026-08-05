@@ -10,6 +10,13 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_proxy"
+        android:title="@string/proxy_settings"
+        android:orderInCategory="5"
+        android:checkable="true"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_toggle_recording"
         android:title="@string/start_recording"
         android:orderInCategory="10"

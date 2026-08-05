@@ -42,5 +42,22 @@
     <string name="response_headers">Response Headers</string>
     <string name="response_body">Response Body</string>
     <string name="rec">REC</string>
+    <string name="proxy_settings">Proxy</string>
+    <string name="enable_proxy">Enable proxy</string>
+    <string name="proxy_mode">Mode</string>
+    <string name="proxy_http">HTTP</string>
+    <string name="proxy_socks5">SOCKS5</string>
+    <string name="proxy_host">Host (IP or domain)</string>
+    <string name="proxy_port">Port</string>
+    <string name="proxy_username">Username (optional)</string>
+    <string name="proxy_password">Password (optional)</string>
+    <string name="proxy_auth_note">Credentials are only used by the test. The WebView proxy override does not support authentication.</string>
+    <string name="proxy_test">Test</string>
+    <string name="proxy_testing">Testing...</string>
+    <string name="proxy_test_ok">Connected through proxy. Exit IP: %1$s</string>
+    <string name="proxy_test_ok_no_ip">Connected through proxy</string>
+    <string name="proxy_test_failed">Failed: %1$s</string>
+    <string name="proxy_invalid_input">Enter a valid host and port</string>
+    <string name="proxy_unsupported">This WebView does not support proxy override</string>
     <string name="view_request_log">View Request Log</string>
 </resources>

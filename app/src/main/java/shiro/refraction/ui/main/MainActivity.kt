@@ -27,14 +27,19 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import shiro.refraction.R
 import shiro.refraction.data.model.NetworkRequest
 import shiro.refraction.data.model.Profile
+import shiro.refraction.data.model.ProxySettings
+import shiro.refraction.domain.ProxyManager
 import shiro.refraction.domain.RequestRecorder
 import shiro.refraction.ui.dashboard.DashboardBottomSheet
 import shiro.refraction.ui.dialog.AddProfileDialog
 import shiro.refraction.ui.dialog.CookieBottomSheet
+import shiro.refraction.ui.dialog.ProxySettingsDialog
 import shiro.refraction.ui.dialog.RequestLogBottomSheet
 import shiro.refraction.util.Constants
 import shiro.refraction.util.UserAgent
@@ -42,6 +47,7 @@ import shiro.refraction.util.UserAgent
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    private val proxyManager by lazy { ProxyManager(this) }
     private lateinit var webView: WebView
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var progressBar: LinearProgressIndicator
@@ -63,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         setupViews()
         setupWebView()
         observeState()
+        applySavedProxy()
     }
 
     private fun setupViews() {
@@ -210,6 +217,16 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 launch {
+                    viewModel.proxySettings
+                        .drop(1)
+                        .distinctUntilChanged()
+                        .collect { settings ->
+                            proxyManager.apply(settings) { applied ->
+                                handleProxyApplied(settings, applied)
+                            }
+                        }
+                }
+                launch {
                     viewModel.isRecording.collect { recording ->
                         updateRecordingIndicator(recording)
                         invalidateOptionsMenu()
@@ -233,6 +250,21 @@ class MainActivity : AppCompatActivity() {
             pulseAnimator?.cancel()
             pulseAnimator = null
             recordingIndicator.isVisible = false
+        }
+    }
+
+    private fun handleProxyApplied(settings: ProxySettings, applied: Boolean) {
+        if (settings.enabled && !applied) {
+            Toast.makeText(this, R.string.proxy_unsupported, Toast.LENGTH_SHORT).show()
+        } else if (applied && webView.url != null) {
+            webView.reload()
+        }
+    }
+
+    private fun applySavedProxy() {
+        val settings = viewModel.proxySettings.value
+        proxyManager.apply(settings) { applied ->
+            handleProxyApplied(settings, applied)
         }
     }
 
@@ -304,6 +336,7 @@ class MainActivity : AppCompatActivity() {
         super.onPrepareOptionsMenu(menu)
         val recording = viewModel.isRecording.value
         menu?.findItem(R.id.action_desktop_mode)?.isChecked = viewModel.desktopMode.value
+        menu?.findItem(R.id.action_proxy)?.isChecked = viewModel.proxySettings.value.enabled
         menu?.findItem(R.id.action_toggle_recording)?.title = if (recording) {
             getString(R.string.stop_recording)
         } else {
@@ -327,6 +360,10 @@ class MainActivity : AppCompatActivity() {
             R.id.action_desktop_mode -> {
                 viewModel.toggleDesktopMode()
                 invalidateOptionsMenu()
+                true
+            }
+            R.id.action_proxy -> {
+                ProxySettingsDialog().show(supportFragmentManager, "proxy")
                 true
             }
             R.id.action_add_profile -> {
